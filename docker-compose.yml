@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+model-service:
+build: ./model-service
+environment:
+- MODEL_VERSION=${MODEL_VERSION:-dev}
+ports: [ "9000:9000" ]
+healthcheck:
+test: ["CMD","wget","-qO-","http://127.0.0.1:9000/health"]
+interval: 30s
+timeout: 3s
+retries: 5
+
+backend:
+build: ./railway-backend
+environment:
+- PORT=8000
+- TRADING_MODE=${TRADING_MODE:-paper}
+- MODEL_SERVICE_URL=http://model-service:9000
+- CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD:-0.60}
+- TARGET_ANN_VOL=${TARGET_ANN_VOL:-0.12}
+- MAX_DRAWDOWN_PCT=${MAX_DRAWDOWN_PCT:-0.15}
+- PER_SYMBOL_USD_CAP=${PER_SYMBOL_USD_CAP:-10000}
+- CORS_ORIGIN=*
+ports: [ "8000:8000" ]
+depends_on:
+model-service:
+condition: service_healthy
